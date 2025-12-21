@@ -12,11 +12,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "sandeep-eks-terraform-three-tier" # Ensure bucket exists
-    key            = "eks/terraform.tfstate"            # Path inside the bucket
+    bucket         = "sandeep-eks-terraform-three-tier"
+    key            = "eks/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "terraform-locks"                 # Optional: for state locking
+    dynamodb_table = "terraform-locks"
   }
 }
 
@@ -28,15 +28,16 @@ provider "aws" {
 }
 
 ############################################
-# VPC & Subnets
-############################################
 # Default VPC
+############################################
 data "aws_vpc" "default" {
   default = true
 }
 
-# Public Subnets (optional, for public worker nodes)
-data "aws_subnets" "public" {
+############################################
+# Subnets in Supported AZs (Private + Public)
+############################################
+data "aws_subnets" "all_supported" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
@@ -51,42 +52,18 @@ data "aws_subnets" "public" {
       "us-east-1d",
       "us-east-1f"
     ]
-  }
-
-  filter {
-    name   = "tag:Tier"
-    values = ["public"]
   }
 }
 
-# Private Subnets (for EKS control plane & node groups)
-data "aws_subnets" "private" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-
-  filter {
-    name   = "availability-zone"
-    values = [
-      "us-east-1a",
-      "us-east-1b",
-      "us-east-1c",
-      "us-east-1d",
-      "us-east-1f"
-    ]
-  }
-
-  filter {
-    name   = "tag:Tier"
-    values = ["private"]
-  }
+# Use the first 2 subnets for EKS control plane (required)
+locals {
+  eks_subnet_ids = slice(data.aws_subnets.all_supported.ids, 0, 2)
 }
 
 ############################################
 # IAM Roles
 ############################################
-# EKS Cluster Role
+# Cluster Role
 resource "aws_iam_role" "cluster_role" {
   name = "eks-cluster-role"
 
@@ -107,13 +84,12 @@ resource "aws_iam_role" "cluster_role" {
   })
 }
 
-# Attach AmazonEKSClusterPolicy
 resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
   role       = aws_iam_role.cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-# EKS Node Group Role
+# Node Group Role
 resource "aws_iam_role" "nodegroup_role" {
   name = "eks-nodegroup-role"
 
@@ -131,7 +107,6 @@ resource "aws_iam_role" "nodegroup_role" {
   })
 }
 
-# Attach policies to Node Group Role
 resource "aws_iam_role_policy_attachment" "nodegroup_worker_policy" {
   role       = aws_iam_role.nodegroup_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
@@ -155,7 +130,7 @@ resource "aws_eks_cluster" "eks_cluster" {
   role_arn  = aws_iam_role.cluster_role.arn
 
   vpc_config {
-    subnet_ids              = data.aws_subnets.private.ids
+    subnet_ids              = local.eks_subnet_ids
     endpoint_private_access = true
     endpoint_public_access  = false
   }
@@ -195,7 +170,7 @@ resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.eks_cluster.name
   node_group_name = "eks-node-group"
   node_role_arn   = aws_iam_role.nodegroup_role.arn
-  subnet_ids      = data.aws_subnets.private.ids
+  subnet_ids      = data.aws_subnets.all_supported.ids
 
   scaling_config {
     desired_size = 1
