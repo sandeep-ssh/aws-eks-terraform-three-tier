@@ -35,7 +35,7 @@ data "aws_vpc" "default" {
 }
 
 ############################################
-# Subnets in Supported AZs (Private + Public)
+# Subnets in Supported AZs
 ############################################
 data "aws_subnets" "all_supported" {
   filter {
@@ -55,7 +55,7 @@ data "aws_subnets" "all_supported" {
   }
 }
 
-# Use the first 2 subnets for EKS control plane (required)
+# Minimum 2 subnets required for EKS control plane
 locals {
   eks_subnet_ids = slice(data.aws_subnets.all_supported.ids, 0, 2)
 }
@@ -63,24 +63,22 @@ locals {
 ############################################
 # IAM Roles
 ############################################
-# Cluster Role
+# EKS Cluster Role
 resource "aws_iam_role" "cluster_role" {
   name = "eks-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
-        }
-        Action = [
-          "sts:AssumeRole",
-          "sts:TagSession"
-        ]
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "eks.amazonaws.com"
       }
-    ]
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }]
   })
 }
 
@@ -95,15 +93,13 @@ resource "aws_iam_role" "nodegroup_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
       }
-    ]
+      Action = "sts:AssumeRole"
+    }]
   })
 }
 
@@ -127,7 +123,7 @@ resource "aws_iam_role_policy_attachment" "nodegroup_ecr_readonly" {
 ############################################
 resource "aws_eks_cluster" "eks_cluster" {
   name      = "three-tier-cloud-eks"
-  role_arn  = aws_iam_role.cluster_role.arn
+  role_arn = aws_iam_role.cluster_role.arn
 
   vpc_config {
     subnet_ids              = local.eks_subnet_ids
@@ -141,7 +137,7 @@ resource "aws_eks_cluster" "eks_cluster" {
 }
 
 ############################################
-# Launch Template for Node Group
+# Launch Template
 ############################################
 resource "aws_launch_template" "eks_node_launch_template" {
   name = "${aws_eks_cluster.eks_cluster.name}-node-template"
@@ -191,6 +187,17 @@ resource "aws_eks_node_group" "example" {
     aws_iam_role_policy_attachment.nodegroup_worker_policy,
     aws_iam_role_policy_attachment.nodegroup_cni_policy,
     aws_iam_role_policy_attachment.nodegroup_ecr_readonly,
-    aws_launch_template.eks_node_launch_template,
+    aws_launch_template.eks_node_launch_template
   ]
+}
+
+############################################
+# ECR Public Repositories
+############################################
+resource "aws_ecrpublic_repository" "frontend" {
+  repository_name = "three-tier-frontend"
+}
+
+resource "aws_ecrpublic_repository" "backend" {
+  repository_name = "three-tier-backend"
 }
