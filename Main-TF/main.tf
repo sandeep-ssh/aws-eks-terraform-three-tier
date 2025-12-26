@@ -127,7 +127,7 @@ resource "aws_eks_cluster" "eks_cluster" {
 
   vpc_config {
     subnet_ids              = local.eks_subnet_ids
-    endpoint_private_access = true
+    endpoint_private_access = false
     endpoint_public_access  = true #enable public access
   }
 
