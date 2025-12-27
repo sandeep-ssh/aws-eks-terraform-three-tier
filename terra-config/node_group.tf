@@ -1,36 +1,8 @@
-############################################
-# Launch Template for Node Group
-############################################
-resource "aws_launch_template" "eks_node_launch_template" {
-  name = "${aws_eks_cluster.eks_cluster.name}-node-template"
-
-  instance_type = "t3.medium"  # better baseline instance
-
-  metadata_options {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 2
-  }
-
-  tags = {
-    Name = "${aws_eks_cluster.eks_cluster.name}-node-template"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-############################################
-# EKS Node Group
-############################################
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.eks_cluster.name
-  node_group_name = "eks-node-group"
+  node_group_name = "EKS_NODE_GROUP"
   node_role_arn   = aws_iam_role.nodegroup_role.arn
-
-  # Use private subnets in supported AZs
-  subnet_ids = data.aws_subnets.eks_control_plane.ids
+  subnet_ids      = data.aws_subnets.public.ids
 
   scaling_config {
     desired_size = 1
@@ -53,4 +25,22 @@ resource "aws_eks_node_group" "example" {
     aws_iam_role_policy_attachment.example-AmazonEC2ContainerRegistryReadOnly,
     aws_launch_template.eks_node_launch_template,
   ]
+}
+
+resource "aws_launch_template" "eks_node_launch_template" {
+  name = "${aws_eks_cluster.eks_cluster.name}-node-template" 
+
+  instance_type = "t2.medium"
+
+  metadata_options {
+    http_endpoint             = "enabled"
+    http_tokens               = "required"
+    http_put_response_hop_limit = 2 
+  }
+  tags = {
+    Name = "${aws_eks_cluster.eks_cluster.name}-node-template"
+  }
+  lifecycle {
+    create_before_destroy = true 
+  }
 }
