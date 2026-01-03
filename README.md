@@ -1,9 +1,27 @@
 
 # AWS EKS Three-Tier Application (Terraform + Kubernetes) Production-grade AWS EKS deployment using Terraform, ALB Ingress, and real-world Kubernetes debugging
 
-![Architecture Diagram](./docs/Three-Tier Cloud-Native Application on AWS EKS.png)
+## 🏗 Architecture Diagram (AWS Well-Architected Framework)
 
-## Overview
+<p align="center">
+  <img 
+    src="docs/Three-Tier-Cloud-Native-Application-on-AWS-EKS.jpg"
+    alt="Three-Tier Cloud-Native Application on AWS EKS"
+    width="900"
+  />
+</p>
+
+> Cloud-native three-tier application deployed on AWS EKS using Terraform, ALB Ingress Controller,  
+> S3 remote state with DynamoDB locking, and Well-Architected best practices.
+
+### Architecture Highlights
+- Terraform-managed EKS infrastructure
+- Application Load Balancer with path-based routing
+- Kubernetes Ingress with backend path rewriting
+- S3 + DynamoDB for Terraform state management
+- Designed using AWS Well-Architected Framework pillars
+
+## Overview 
 A production-style cloud-native three-tier application deployed on **Amazon EKS**, fully provisioned using **Terraform**, and exposed via **AWS ALB Ingress Controller** with path-based routing.
 
 **Tech Stack**
