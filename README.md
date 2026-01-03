@@ -5,7 +5,7 @@
 
 <p align="center">
   <img 
-    src="docs/Three-Tier-Cloud-Native-Application-on-AWS-EKS.png"
+    src="docs/Three-Tier Cloud-Native Application on AWS EKS.png"
     alt="Three-Tier Cloud-Native Application on AWS EKS"
     width="900"
   />
