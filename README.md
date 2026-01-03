@@ -1,7 +1,7 @@
 
 # AWS EKS Three-Tier Application (Terraform + Kubernetes) Production-grade AWS EKS deployment using Terraform, ALB Ingress, and real-world Kubernetes debugging
 
-![Architecture Diagram](./docs/Three-Tier Cloud-Native Application on AWS EKS)
+![Architecture Diagram](./docs/Three-Tier Cloud-Native Application on AWS EKS.png)
 
 ## Overview
 A production-style cloud-native three-tier application deployed on **Amazon EKS**, fully provisioned using **Terraform**, and exposed via **AWS ALB Ingress Controller** with path-based routing.
